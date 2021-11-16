@@ -21,9 +21,6 @@ COLOR7 = "#0a043c"
 COLOR8 = "#09015f"
 COLOR9 = '#2c061f'
 FONT ="Times New Roman"
-FILE = "/Users/abdelqayyimmaazouyahaya/Desktop/Projects/GradeAverageCalculator/data.json"
-ASSIGNMENT_OPTIONS = ['LAB', 'MIDTERM', 'PASSAGE ANALYSIS', 'FINAL EXAM', 'SECOND ESSAY', 'QUIZ', 'TEST', 'ASSIGNMENT']
-CLASS_OPTIONS = ['COIS-1020H', 'MATH-1550H', 'ENG-1001H', 'COIS-1400H', 'ADMN-1620H']
 
 connection = sqlite3.connect("database.db") #Create a Database 
 cursor = connection.cursor() #Create Cursor in Order to add tables and values 
@@ -44,9 +41,44 @@ connection.close()
 
 
 
+def average():
+    class_name = class_entry.get().upper()
+    assignment_name = assignment_entry.get().upper()
+    connection = sqlite3.connect("database.db") #Create a Database 
+    cursor = connection.cursor() #Create Cursor in Order to add tables and values 
+    
+    if ClassInDatabase(class_name):#check that the class name in put is still in 
+        if len(assignment_name) != 0:
+            if AssignmentInDatabase(class_name, assignment_name):
+                #show the average for that assignment
+                cursor.execute(f"SELECT Vals FROM Grades where Class_Name='{class_name}' AND Assignment_Name='{assignment_name}'")
+                connection.commit() 
+                results = cursor.fetchall()[0][0]
+                array = []
+                for x in  results.split(","):
+                    array.append(float(x))
+                messagebox.showinfo(title=f'{class_name}: {assignment_name}', message=f'The average for {assignment_name} in {class_name} is {numpy.mean(array)}%') 
+            else:
+                #tell the user that the assignment does not exist
+                messagebox.showerror(title='Assignment Does not exist',message=f'The assignment {assignment_name} does not exist in the database, make sure to add it before requesting the average')
+        else:
+            #just show the average for the class as a whole 
+            cursor.execute(f"SELECT * FROM Grades where Class_Name='{class_name}'")
+            connection.commit() 
+            results = cursor.fetchall()
+            array = []
+            for x in results:
+                for y in x[2].split():
+                    array.append(float(y))
+            messagebox.showinfo(title=f'{class_name}', message=f'The average for {class_name} is {numpy.mean(array)}%') 
+            
+    else:
+        #tell the user that the class is not in the database
+        messagebox.showerror(title="Class not in Database", message=f"The class {class_name} is not yet in the database. Add it before computing the average")
 
 
-# def average():
+
+    
 #Add a "Info button next to each button in order to let the user know what each button does."
 def existing_data():
     connection = sqlite3.connect("database.db") #Create a Database 
@@ -65,14 +97,11 @@ def existing_data():
 
 
 def add_class():
-    # connection = sqlite3.connect("database.db") #Create a Database 
-    # cursor = connection.cursor() #Create Cursor in Order to add tables and values 
+    connection = sqlite3.connect("database.db") #Create a Database 
+    cursor = connection.cursor() #Create Cursor in Order to add tables and values 
     class_name = class_entry.get().upper()
     assignment_name = assignment_entry.get().upper()
     grade_name = grade_entry.get().upper()
-
-    # connection.commit()
-
     if inputs_valid(class_name,assignment_name, grade_name): #if class inputs fields are not empty
         if ClassInDatabase(class_name) and AssignmentInDatabase(class_name, assignment_name) and check_interger(grade_name):#User inputted grade, assignment and number all valid
             connection = sqlite3.connect("database.db") #Create a Database 
@@ -114,8 +143,8 @@ def add_class():
                 cursor.execute(f"INSERT INTO Grades VALUES('{class_name}', '{assignment_name}','{grade_name}')")
                 connection.commit()
                 connection.close()
-            messagebox.showinfo(title="Successfully added", message="The grade has been successfully added to the database")
-            delete_entries(class_entry,assignment_entry,grade_entry)
+                messagebox.showinfo(title="Successfully added", message="The grade has been successfully added to the database")
+                delete_entries(class_entry,assignment_entry,grade_entry)
         #press ok to add the assignment to the database, let them know that the assignment does not exist yet
         elif ClassInDatabase(class_name) and AssignmentInDatabase(class_name, assignment_name)==False and check_interger(grade_name)==False:#User inputted grade but not VALID assignment or number 
             messagebox.showerror(title="Assignment not in Database, and Not correct grade input", message=f"The Assignment: {assignment_name} is not yet in the database, and the grade is not valid (must be numbers).")
@@ -157,24 +186,30 @@ grade_label = Label(text="Grade:", highlightthickness=0, bg=COLOR4)             
 grade_label.grid(row=3,column=0, sticky=E)               #grade placement
 
 
-class_entry = Entry(width=30, highlightthickness=0, bg=COLOR2)
+class_entry = Entry(width=23, highlightthickness=0, bg=COLOR2)
 class_entry.grid(row=1, column=1)
+
 
 assignment_entry = Entry(width=23, highlightthickness=0, bg=COLOR2)
 assignment_entry.grid(row=2, column=1, sticky=W)
 
-grade_entry = Entry(width=30, highlightthickness=0, bg=COLOR2)
+grade_entry = Entry(width=23, highlightthickness=0, bg=COLOR2)
 grade_entry.grid(row=3, column=1)
 
-# average_button = Button(text="Average", font=(FONT, 14, "bold"), command=average, highlightthickness=0, foreground=COLOR6)
-# average_button.grid(row=4,column=1)
+average_button = Button(text="Average", font=(FONT, 14, "bold"), command=average, highlightthickness=0, foreground=COLOR6)
+average_button.grid(row=4,column=1)
+average_entry_info = Button(text="Info", foreground=COLOR6, command=average_info)
+average_entry_info.grid(row=4,column=2)
 
 add_button = Button(text="Add Grade", width=12, font=(FONT, 12, "bold"),command=add_class, foreground=COLOR7) #,command=add_grade
 add_button.grid(row=5,column=1)
+add_entry_info = Button(text="Info", foreground=COLOR6, command=add_info)
+add_entry_info.grid(row=5,column=2)
 
 existing_data_button = Button(text="Look at Existing Data", width=20,font=("Arial", 12, "bold"), command=existing_data, foreground=COLOR8) 
 existing_data_button.grid(row=6, column=1)
-
+existing_entry_info = Button(text="Info", foreground=COLOR6, command=existing_info)
+existing_entry_info.grid(row=6,column=2)
 # add_class_or_assignment = Button(text="Add Class or Assignment",width=24, font=("Times New Roman", 12, "bold"),command=add_class, foreground=COLOR9)
 # add_class_or_assignment.grid(row=6,column=1)
 
